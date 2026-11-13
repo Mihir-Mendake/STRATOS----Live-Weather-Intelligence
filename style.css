@@ -1474,3 +1474,332 @@ body.globe-page {
 .fly-to-item {
     text-decoration: none;
 }
+
+
+/* ===================================================
+   PAGE 3: GRAPHICAL CLIMATE ANALYTICS (analytics.html)
+   =================================================== */
+
+.analytics-shell {
+    max-width: 1400px;
+    padding-bottom: 4rem;
+}
+
+/* --- Analytics Hero Summary Banner --- */
+.analytics-hero {
+    border-radius: 28px;
+    padding: 2rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.hero-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    padding: 4px 12px;
+    border-radius: 50px;
+    display: inline-block;
+    width: fit-content;
+}
+
+.hero-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.hero-title-row h1 {
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    color: var(--text-main);
+}
+
+.hero-country {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-dim);
+}
+
+.hero-flag {
+    font-size: 1.6rem;
+}
+
+.hero-coords {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    font-family: monospace;
+}
+
+.hero-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.hero-temp-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.hero-temp {
+    font-size: 3.8rem;
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1;
+}
+
+.hero-unit {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.hero-icon {
+    font-size: 2.2rem;
+    margin-left: 6px;
+    animation: floatIcon 3s ease-in-out infinite alternate;
+}
+
+@keyframes floatIcon {
+    from { transform: translateY(0); }
+    to { transform: translateY(-6px); }
+}
+
+.hero-condition {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-top: 2px;
+}
+
+.hero-feels {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+}
+
+.hero-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.action-pill {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-main);
+    transition: all 0.25s ease;
+}
+
+.action-pill:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateX(4px);
+}
+
+/* --- KPI Summary Ribbon --- */
+.analytics-kpi-ribbon {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
+    margin-bottom: 2rem;
+}
+
+.kpi-card {
+    border-radius: 20px;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.kpi-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-dim);
+}
+
+.kpi-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text-main);
+}
+
+.kpi-sub {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    line-height: 1.3;
+}
+
+/* --- Analytics Visualization Grid --- */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.8rem;
+}
+
+.chart-card {
+    border-radius: 28px;
+    padding: 1.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.chart-card.full-width {
+    grid-column: span 2;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.chart-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--accent);
+    margin-bottom: 4px;
+}
+
+.chart-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.3px;
+}
+
+.chart-legend-custom {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-dim);
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+}
+
+.legend-dot.temp-dot { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+.legend-dot.feels-dot { background: #818cf8; box-shadow: 0 0 10px #818cf8; }
+
+.chart-wrapper {
+    position: relative;
+    width: 100%;
+    height: 290px;
+}
+
+.chart-wrapper.spline-wrapper {
+    height: 330px;
+}
+
+.chart-wrapper.radar-wrapper {
+    height: 310px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.analytics-footer {
+    margin-top: 3.5rem;
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+}
+
+.analytics-footer strong {
+    color: var(--text-main);
+}
+
+/* --- Responsive Media Queries --- */
+@media (max-width: 1100px) {
+    .analytics-kpi-ribbon {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+    .chart-card.full-width {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .analytics-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        padding: 1.5rem;
+    }
+    .hero-center {
+        align-items: flex-start;
+        text-align: left;
+    }
+    .hero-actions {
+        flex-direction: row;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    .analytics-kpi-ribbon {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .chart-wrapper {
+        height: 250px;
+    }
+    .chart-wrapper.spline-wrapper {
+        height: 270px;
+    }
+}
+
