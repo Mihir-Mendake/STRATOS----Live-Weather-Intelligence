@@ -1,0 +1,765 @@
+// ===================================================
+// Stratos Weather — Deep Climate Analytics Engine (analytics.js)
+// High-Performance Meteorological Telemetry with Chart.js
+// ===================================================
+
+const OPEN_METEO_BASE = 'https://api.open-meteo.com/v1';
+const AIR_QUALITY_BASE = 'https://air-quality-api.open-meteo.com/v1';
+const GEOCODING_BASE = 'https://geocoding-api.open-meteo.com/v1';
+const USE_API = window.location.protocol.startsWith('http');
+const API_BASE_URL = USE_API ? '/api' : null;
+
+// Global State
+let currentUnit = localStorage.getItem('stratos_unit') || localStorage.getItem('skycast_unit') || 'C';
+let activeCity = {
+    name: 'Tokyo',
+    country: 'Japan',
+    flag: '🇯🇵',
+    lat: 35.6762,
+    lng: 139.6503,
+    elevation: 40
+};
+let rawWeatherData = null;
+let rawAirData = null;
+let chartInstances = {};
+
+// Default Chart.js Styling Options
+Chart.defaults.color = 'rgba(255, 255, 255, 0.65)';
+Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15, 23, 42, 0.95)';
+Chart.defaults.plugins.tooltip.borderColor = 'rgba(255, 255, 255, 0.15)';
+Chart.defaults.plugins.tooltip.borderWidth = 1;
+Chart.defaults.plugins.tooltip.cornerRadius = 12;
+Chart.defaults.plugins.tooltip.padding = 12;
+Chart.defaults.plugins.tooltip.usePointStyle = true;
+
+// ===================================================
+// 1. DATA CONVERSION & FORMATTING HELPERS
+// ===================================================
+
+function formatTemp(celsius) {
+    if (celsius === undefined || celsius === null) return '--';
+    const val = Number(celsius);
+    if (currentUnit === 'F') {
+        return Math.round((val * 9 / 5) + 32);
+    }
+    return Math.round(val);
+}
+
+function formatWindSpeed(kmh) {
+    const val = Number(kmh) || 0;
+    if (currentUnit === 'F') {
+        return `${Math.round(val * 0.621371)} mph`;
+    }
+    return `${Math.round(val)} km/h`;
+}
+
+function formatPressure(hpa) {
+    const val = Number(hpa) || 1013;
+    if (currentUnit === 'F') {
+        return `${(val * 0.02953).toFixed(2)} inHg`;
+    }
+    return `${Math.round(val)} hPa`;
+}
+
+function mapWeatherCode(code, isDay = true) {
+    if (code === 0 || code === 1) return { condition: isDay ? "Sunny" : "Clear", icon: isDay ? "☀️" : "🌙" };
+    if (code === 2 || code === 3 || code === 45 || code === 48) return { condition: "Cloudy", icon: "☁️" };
+    if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) return { condition: "Rain", icon: "🌧️" };
+    if ([71, 73, 75, 77, 85, 86].includes(code)) return { condition: "Snow", icon: "❄️" };
+    if ([95, 96, 99].includes(code)) return { condition: "Storm", icon: "⛈️" };
+    return { condition: "Clear", icon: "🌤️" };
+}
+
+function getAqiDescription(aqi) {
+    if (aqi <= 50) return { label: 'Good (Healthy)', color: '#34d399' };
+    if (aqi <= 100) return { label: 'Moderate', color: '#fbbf24' };
+    if (aqi <= 150) return { label: 'Sensitive Groups', color: '#f97316' };
+    if (aqi <= 200) return { label: 'Unhealthy', color: '#ef4444' };
+    if (aqi <= 300) return { label: 'Very Unhealthy', color: '#a855f7' };
+    return { label: 'Hazardous', color: '#7e22ce' };
+}
+
+function getUvRiskLevel(uv) {
+    if (uv <= 2) return { label: 'Low Risk', color: '#34d399' };
+    if (uv <= 5) return { label: 'Moderate Risk', color: '#fbbf24' };
+    if (uv <= 7) return { label: 'High Risk', color: '#f97316' };
+    if (uv <= 10) return { label: 'Very High Risk', color: '#ef4444' };
+    return { label: 'Extreme Risk', color: '#a855f7' };
+}
+
+// ===================================================
+// 2. DATA INGESTION ENGINE
+// ===================================================
+
+async function loadAnalyticsForCity(city) {
+    activeCity = city;
+    try {
+        localStorage.setItem('stratos_active_city', city.name);
+    } catch (e) {}
+
+    // Update Action Button Deep-Links
+    const globeBtn = document.getElementById('btn-view-on-globe');
+    const dashBtn = document.getElementById('btn-view-dashboard');
+    if (globeBtn) globeBtn.href = `globe.html?city=${encodeURIComponent(city.name)}`;
+    if (dashBtn) dashBtn.href = `index.html?city=${encodeURIComponent(city.name)}`;
+
+    try {
+        // Query 1: Open-Meteo High-Resolution Weather Model
+        const weatherUrl = `${OPEN_METEO_BASE}/forecast?latitude=${city.lat}&longitude=${city.lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,wind_direction_10m,surface_pressure&hourly=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,surface_pressure,uv_index,weather_code&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,weather_code&timezone=auto`;
+        const weatherResp = await fetch(weatherUrl);
+        rawWeatherData = await weatherResp.json();
+
+        // Query 2: Open-Meteo Atmospheric Chemistry / Air Quality API
+        const airUrl = `${AIR_QUALITY_BASE}/air-quality?latitude=${city.lat}&longitude=${city.lng}&current=us_aqi,pm10,pm2_5,nitrogen_dioxide,ozone,carbon_monoxide&timezone=auto`;
+        const airResp = await fetch(airUrl);
+        rawAirData = await airResp.json();
+
+        // Populate Hero & KPI Ribbon
+        updateHeroBanner();
+        updateKpiRibbon();
+
+        // Render All 5 Deep Visualizations
+        renderAllCharts();
+    } catch (err) {
+        console.error("Error loading analytics telemetry:", err);
+    }
+}
+
+// ===================================================
+// 3. HERO BANNER & KPI RIBBON UPDATER
+// ===================================================
+
+function updateHeroBanner() {
+    if (!rawWeatherData) return;
+    const current = rawWeatherData.current || {};
+    const daily = rawWeatherData.daily || {};
+
+    const celsius = current.temperature_2m !== undefined ? current.temperature_2m : 20;
+    const feelsCelsius = current.apparent_temperature !== undefined ? current.apparent_temperature : celsius;
+    const maxCelsius = daily.temperature_2m_max && daily.temperature_2m_max.length > 0 ? daily.temperature_2m_max[0] : celsius + 3;
+    const minCelsius = daily.temperature_2m_min && daily.temperature_2m_min.length > 0 ? daily.temperature_2m_min[0] : celsius - 4;
+    const isDay = current.is_day === 1;
+    const { condition, icon } = mapWeatherCode(current.weather_code || 0, isDay);
+
+    document.getElementById('analytics-city-name').innerText = activeCity.name;
+    document.getElementById('analytics-country-name').innerText = activeCity.country || 'Global Station';
+    document.getElementById('analytics-flag').innerText = activeCity.flag || '📍';
+    document.getElementById('analytics-coords').innerText = `Coordinates: ${Math.abs(activeCity.lat).toFixed(2)}° ${activeCity.lat >= 0 ? 'N' : 'S'}, ${Math.abs(activeCity.lng).toFixed(2)}° ${activeCity.lng >= 0 ? 'E' : 'W'} • Elevation: ${activeCity.elevation || 35} m ASL`;
+
+    document.getElementById('analytics-temp').innerText = formatTemp(celsius);
+    document.getElementById('analytics-icon').innerText = icon;
+    document.getElementById('analytics-condition').innerText = condition;
+    document.getElementById('analytics-feels').innerText = `Feels like ${formatTemp(feelsCelsius)}° • High: ${formatTemp(maxCelsius)}° / Low: ${formatTemp(minCelsius)}°`;
+}
+
+function updateKpiRibbon() {
+    if (!rawWeatherData) return;
+    const hourly = rawWeatherData.hourly || {};
+    const current = rawWeatherData.current || {};
+    const daily = rawWeatherData.daily || {};
+    const airCurrent = rawAirData && rawAirData.current ? rawAirData.current : {};
+
+    // 24h Peak and Min Temps
+    const next24Temps = (hourly.temperature_2m || []).slice(0, 24);
+    const maxTemp = next24Temps.length > 0 ? Math.max(...next24Temps) : 25;
+    const minTemp = next24Temps.length > 0 ? Math.min(...next24Temps) : 15;
+
+    document.getElementById('kpi-max-temp').innerText = `${formatTemp(maxTemp)}°`;
+    document.getElementById('kpi-min-temp').innerText = `${formatTemp(minTemp)}°`;
+
+    // Humidity
+    const humidity = current.relative_humidity_2m !== undefined ? current.relative_humidity_2m : 55;
+    document.getElementById('kpi-humidity').innerText = `${humidity}%`;
+    document.getElementById('kpi-humidity-status').innerText = humidity > 70 ? 'High moisture saturation' : (humidity < 35 ? 'Arid dry air mass' : 'Optimal comfort zone');
+
+    // Wind Gust
+    const windSpeed = current.wind_speed_10m || 12;
+    document.getElementById('kpi-wind').innerText = formatWindSpeed(windSpeed);
+    document.getElementById('kpi-wind-dir').innerText = `Bearing: ${current.wind_direction_10m || 180}° (${getWindCardinal(current.wind_direction_10m)})`;
+
+    // Peak UV
+    const maxUv = daily.uv_index_max && daily.uv_index_max.length > 0 ? Math.round(daily.uv_index_max[0]) : 4;
+    const uvRisk = getUvRiskLevel(maxUv);
+    document.getElementById('kpi-uv').innerText = maxUv;
+    document.getElementById('kpi-uv').style.color = uvRisk.color;
+    document.getElementById('kpi-uv-risk').innerText = uvRisk.label;
+
+    // AQI
+    const aqiScore = airCurrent.us_aqi !== undefined ? Math.round(airCurrent.us_aqi) : 38;
+    const aqiDesc = getAqiDescription(aqiScore);
+    document.getElementById('kpi-aqi').innerText = aqiScore;
+    document.getElementById('kpi-aqi').style.color = aqiDesc.color;
+    document.getElementById('kpi-aqi-status').innerText = aqiDesc.label;
+}
+
+function getWindCardinal(deg = 0) {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return directions[Math.round(deg / 45) % 8];
+}
+
+// ===================================================
+// 4. CHART.JS VISUALIZATION SUITE (5 CHARTS)
+// ===================================================
+
+function destroyChart(name) {
+    if (chartInstances[name]) {
+        chartInstances[name].destroy();
+        delete chartInstances[name];
+    }
+}
+
+function renderAllCharts() {
+    renderTempSplineChart();
+    renderSevenDayRangeChart();
+    renderCorrelationChart();
+    renderUvSolarChart();
+    renderAqiRadarChart();
+}
+
+// ---------------------------------------------------
+// CHART 1: 24-HOUR TEMPERATURE SPLINE CURVE
+// ---------------------------------------------------
+function renderTempSplineChart() {
+    destroyChart('tempSpline');
+    const ctx = document.getElementById('tempSplineChart');
+    if (!ctx || !rawWeatherData || !rawWeatherData.hourly) return;
+
+    const hourly = rawWeatherData.hourly;
+    const times = (hourly.time || []).slice(0, 24).map(t => {
+        const d = new Date(t);
+        return d.toLocaleTimeString([], { hour: 'numeric' });
+    });
+
+    const temps = (hourly.temperature_2m || []).slice(0, 24).map(c => formatTemp(c));
+    const feels = (hourly.apparent_temperature || []).slice(0, 24).map(c => formatTemp(c));
+
+    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(56, 189, 248, 0.45)');
+    gradient.addColorStop(0.6, 'rgba(56, 189, 248, 0.08)');
+    gradient.addColorStop(1, 'rgba(56, 189, 248, 0)');
+
+    chartInstances['tempSpline'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: times,
+            datasets: [
+                {
+                    label: `Ambient Temp (°${currentUnit})`,
+                    data: temps,
+                    borderColor: '#38bdf8',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#38bdf8',
+                    pointBorderColor: '#0f172a',
+                    pointBorderWidth: 2,
+                    pointRadius: 3.5,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    backgroundColor: gradient,
+                    tension: 0.4
+                },
+                {
+                    label: `Feels Like (°${currentUnit})`,
+                    data: feels,
+                    borderColor: '#818cf8',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointBackgroundColor: '#818cf8',
+                    pointRadius: 2,
+                    pointHoverRadius: 5,
+                    fill: false,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.06)' },
+                    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }
+                },
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.06)' },
+                    ticks: {
+                        callback: val => `${val}°`
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ---------------------------------------------------
+// CHART 2: 7-DAY MIN VS. MAX THERMAL RANGE
+// ---------------------------------------------------
+function renderSevenDayRangeChart() {
+    destroyChart('sevenDay');
+    const ctx = document.getElementById('sevenDayRangeChart');
+    if (!ctx || !rawWeatherData || !rawWeatherData.daily) return;
+
+    const daily = rawWeatherData.daily;
+    const days = (daily.time || []).slice(0, 7).map(t => {
+        const d = new Date(t + 'T00:00:00');
+        return d.toLocaleDateString([], { weekday: 'short' });
+    });
+
+    const maxTemps = (daily.temperature_2m_max || []).slice(0, 7).map(c => formatTemp(c));
+    const minTemps = (daily.temperature_2m_min || []).slice(0, 7).map(c => formatTemp(c));
+
+    chartInstances['sevenDay'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: days,
+            datasets: [
+                {
+                    label: `Max Temp (°${currentUnit})`,
+                    data: maxTemps,
+                    backgroundColor: 'rgba(244, 63, 94, 0.85)',
+                    borderRadius: 8,
+                    borderSkipped: false
+                },
+                {
+                    label: `Min Temp (°${currentUnit})`,
+                    data: minTemps,
+                    backgroundColor: 'rgba(56, 189, 248, 0.85)',
+                    borderRadius: 8,
+                    borderSkipped: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { boxWidth: 12, padding: 12, font: { weight: 600 } }
+                }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.06)' },
+                    ticks: { callback: val => `${val}°` }
+                }
+            }
+        }
+    });
+}
+
+// ---------------------------------------------------
+// CHART 3: ATMOSPHERIC CORRELATION (HUMIDITY, WIND, PRESSURE)
+// ---------------------------------------------------
+function renderCorrelationChart() {
+    destroyChart('correlation');
+    const ctx = document.getElementById('correlationChart');
+    if (!ctx || !rawWeatherData || !rawWeatherData.hourly) return;
+
+    const hourly = rawWeatherData.hourly;
+    const times = (hourly.time || []).slice(0, 24).map(t => {
+        const d = new Date(t);
+        return d.toLocaleTimeString([], { hour: 'numeric' });
+    });
+
+    const humidity = (hourly.relative_humidity_2m || []).slice(0, 24);
+    const wind = (hourly.wind_speed_10m || []).slice(0, 24).map(w => currentUnit === 'F' ? Math.round(w * 0.621371) : Math.round(w));
+    const pressure = (hourly.surface_pressure || []).slice(0, 24);
+
+    chartInstances['correlation'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: times,
+            datasets: [
+                {
+                    type: 'line',
+                    label: 'Humidity (%)',
+                    data: humidity,
+                    borderColor: '#34d399',
+                    backgroundColor: 'rgba(52, 211, 153, 0.1)',
+                    fill: true,
+                    tension: 0.35,
+                    borderWidth: 2,
+                    yAxisID: 'yHumidity',
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                },
+                {
+                    type: 'bar',
+                    label: `Wind (${currentUnit === 'F' ? 'mph' : 'km/h'})`,
+                    data: wind,
+                    backgroundColor: 'rgba(56, 189, 248, 0.75)',
+                    borderRadius: 6,
+                    yAxisID: 'yWind'
+                },
+                {
+                    type: 'line',
+                    label: 'Pressure (hPa)',
+                    data: pressure,
+                    borderColor: '#fbbf24',
+                    borderWidth: 2,
+                    borderDash: [4, 4],
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    tension: 0.3,
+                    yAxisID: 'yPressure'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { boxWidth: 10, padding: 10, font: { weight: 600 } }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }
+                },
+                yHumidity: {
+                    type: 'linear',
+                    position: 'left',
+                    min: 0,
+                    max: 100,
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { callback: val => `${val}%` }
+                },
+                yWind: {
+                    type: 'linear',
+                    position: 'right',
+                    grid: { display: false },
+                    ticks: { callback: val => `${val}` }
+                },
+                yPressure: {
+                    display: false,
+                    type: 'linear'
+                }
+            }
+        }
+    });
+}
+
+// ---------------------------------------------------
+// CHART 4: DIURNAL UV RADIATION & SOLAR CURVE
+// ---------------------------------------------------
+function renderUvSolarChart() {
+    destroyChart('uvSolar');
+    const ctx = document.getElementById('uvSolarChart');
+    if (!ctx || !rawWeatherData || !rawWeatherData.hourly) return;
+
+    const hourly = rawWeatherData.hourly;
+    const times = (hourly.time || []).slice(0, 24).map(t => {
+        const d = new Date(t);
+        return d.toLocaleTimeString([], { hour: 'numeric' });
+    });
+
+    const uvValues = (hourly.uv_index || []).slice(0, 24);
+
+    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 260);
+    gradient.addColorStop(0, 'rgba(251, 191, 36, 0.6)');
+    gradient.addColorStop(0.5, 'rgba(249, 115, 22, 0.25)');
+    gradient.addColorStop(1, 'rgba(249, 115, 22, 0)');
+
+    chartInstances['uvSolar'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: times,
+            datasets: [
+                {
+                    label: 'Solar UV Index',
+                    data: uvValues,
+                    borderColor: '#f59e0b',
+                    borderWidth: 2.5,
+                    fill: true,
+                    backgroundColor: gradient,
+                    tension: 0.45,
+                    pointBackgroundColor: '#fbbf24',
+                    pointBorderColor: '#0f172a',
+                    pointBorderWidth: 2,
+                    pointRadius: 3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: item => `UV Index: ${item.raw} (${getUvRiskLevel(item.raw).label})`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }
+                },
+                y: {
+                    min: 0,
+                    suggestedMax: 10,
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { stepSize: 2 }
+                }
+            }
+        }
+    });
+}
+
+// ---------------------------------------------------
+// CHART 5: AIR QUALITY & PARTICULATE MATTER RADAR
+// ---------------------------------------------------
+function renderAqiRadarChart() {
+    destroyChart('aqiRadar');
+    const ctx = document.getElementById('aqiRadarChart');
+    if (!ctx) return;
+
+    const currentAir = rawAirData && rawAirData.current ? rawAirData.current : {};
+    const pm25 = currentAir.pm2_5 !== undefined ? Math.round(currentAir.pm2_5) : 18;
+    const pm10 = currentAir.pm10 !== undefined ? Math.round(currentAir.pm10) : 32;
+    const no2 = currentAir.nitrogen_dioxide !== undefined ? Math.round(currentAir.nitrogen_dioxide) : 24;
+    const o3 = currentAir.ozone !== undefined ? Math.round(currentAir.ozone) : 45;
+    const co = currentAir.carbon_monoxide !== undefined ? Math.round(currentAir.carbon_monoxide / 10) : 30;
+
+    chartInstances['aqiRadar'] = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['PM2.5 (Fine)', 'PM10 (Dust)', 'NO₂ (Dioxide)', 'O₃ (Ozone)', 'CO (Carbon Monoxide)'],
+            datasets: [
+                {
+                    label: 'Pollutant Concentration (µg/m³)',
+                    data: [pm25, pm10, no2, o3, co],
+                    backgroundColor: 'rgba(56, 189, 248, 0.25)',
+                    borderColor: '#38bdf8',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#38bdf8',
+                    pointBorderColor: '#0f172a',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                r: {
+                    angleLines: { color: 'rgba(255, 255, 255, 0.12)' },
+                    grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                    pointLabels: {
+                        color: 'rgba(255, 255, 255, 0.85)',
+                        font: { size: 10, weight: 600 }
+                    },
+                    ticks: {
+                        backdropColor: 'transparent',
+                        color: 'rgba(255, 255, 255, 0.45)',
+                        showLabelBackdrop: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ===================================================
+// 5. CITY AUTOCOMPLETE & SEARCH CONTROLLER
+// ===================================================
+
+function setupSearch() {
+    const cityInput = document.getElementById('city-input');
+    const listContainer = document.getElementById('autocomplete-list');
+    if (!cityInput || !listContainer) return;
+
+    let searchCache = new Map();
+
+    cityInput.addEventListener('input', debounce(async function () {
+        const val = this.value.trim();
+        listContainer.innerHTML = '';
+        listContainer.style.display = 'none';
+        if (!val || val.length < 2) return;
+
+        if (searchCache.has(val)) {
+            renderSuggestions(searchCache.get(val), val, listContainer, cityInput);
+            return;
+        }
+
+        try {
+            let results = [];
+            if (API_BASE_URL) {
+                try {
+                    const resp = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(val)}`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        results = data.results || [];
+                    }
+                } catch (e) {}
+            }
+
+            if (results.length === 0) {
+                const response = await fetch(`${GEOCODING_BASE}/search?name=${encodeURIComponent(val)}&count=5&language=en&format=json`);
+                const data = await response.json();
+                results = data.results || [];
+            }
+
+            if (results.length > 0) {
+                searchCache.set(val, results);
+                renderSuggestions(results, val, listContainer, cityInput);
+            }
+        } catch (e) {
+            console.error("Geocoding error in analytics:", e);
+        }
+    }, 300));
+
+    document.addEventListener('click', (e) => {
+        if (e.target !== cityInput) {
+            listContainer.style.display = 'none';
+        }
+    });
+}
+
+function renderSuggestions(matches, val, listContainer, cityInput) {
+    if (!matches || matches.length === 0) return;
+    listContainer.innerHTML = '';
+    listContainer.style.display = 'block';
+
+    matches.forEach(match => {
+        const item = document.createElement("div");
+        item.className = "suggestion-item";
+
+        const regex = new RegExp(`(${val})`, "gi");
+        const highlightedName = match.name.replace(regex, '<span class="highlight">$1</span>');
+        item.innerHTML = `<span>${highlightedName}</span><span class="country-code">${match.country || ''}</span>`;
+
+        item.addEventListener("click", () => {
+            cityInput.value = "";
+            listContainer.style.display = 'none';
+
+            const newCity = {
+                name: match.name,
+                country: match.country,
+                flag: getFlagEmoji(match.country_code || match.country),
+                lat: match.latitude,
+                lng: match.longitude,
+                elevation: match.elevation !== undefined ? Math.round(match.elevation) : 35
+            };
+
+            loadAnalyticsForCity(newCity);
+        });
+
+        listContainer.appendChild(item);
+    });
+}
+
+function getFlagEmoji(countryCode) {
+    if (!countryCode || countryCode.length !== 2) return '📍';
+    const codePoints = countryCode
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt());
+    return String.fromCodePoint(...codePoints);
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function () {
+        const context = this, args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
+
+// ===================================================
+// 6. UNIT TOGGLE & CLOCK CONTROLS
+// ===================================================
+
+function setupUnitToggle() {
+    const unitBtn = document.getElementById('unit-toggle');
+    updateUnitButtonLabel();
+    if (unitBtn) {
+        unitBtn.addEventListener('click', () => {
+            currentUnit = currentUnit === 'C' ? 'F' : 'C';
+            localStorage.setItem('stratos_unit', currentUnit);
+            updateUnitButtonLabel();
+            updateHeroBanner();
+            updateKpiRibbon();
+            renderAllCharts();
+        });
+    }
+}
+
+function updateUnitButtonLabel() {
+    const unitBtn = document.getElementById('unit-toggle');
+    if (unitBtn) {
+        unitBtn.innerText = `°${currentUnit}`;
+        unitBtn.title = `Switch to °${currentUnit === 'C' ? 'F' : 'C'}`;
+    }
+}
+
+function updateClock() {
+    const timeEl = document.getElementById('current-time');
+    if (timeEl) {
+        const now = new Date();
+        timeEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+}
+
+// ===================================================
+// 7. INITIALIZATION LIFECYCLE
+// ===================================================
+
+async function initAnalytics() {
+    setupUnitToggle();
+    setupSearch();
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // Read initial city from URL params or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramCity = urlParams.get('city');
+    const storedCity = localStorage.getItem('stratos_active_city');
+
+    const targetCityName = paramCity || storedCity || 'Tokyo';
+
+    // Resolve city coordinates via Geocoding
+    try {
+        const response = await fetch(`${GEOCODING_BASE}/search?name=${encodeURIComponent(targetCityName)}&count=1&language=en&format=json`);
+        const data = await response.json();
+        if (data.results && data.results.length > 0) {
+            const res = data.results[0];
+            loadAnalyticsForCity({
+                name: res.name,
+                country: res.country,
+                flag: getFlagEmoji(res.country_code || res.country),
+                lat: res.latitude,
+                lng: res.longitude,
+                elevation: res.elevation !== undefined ? Math.round(res.elevation) : 40
+            });
+            return;
+        }
+    } catch (e) {
+        console.warn("Geocoding resolution fallback:", e);
+    }
+
+    // Default Tokyo fallback
+    loadAnalyticsForCity(activeCity);
+}
+
+window.addEventListener('DOMContentLoaded', initAnalytics);
