@@ -3,45 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stratos Analytics // Deep Atmospheric Trends</title>
+    <title>Stratos Analytics // Deep Atmospheric Telemetry</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js 4.4+ (High-Performance WebGL/Canvas Charting) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
-<body class="weather-cloudy">
+<body class="analytics-page weather-cloudy">
     <div class="bg-gradient"></div>
     <div class="noise-overlay"></div>
 
-    <div class="app-shell">
+    <div class="app-shell analytics-shell">
         <!-- Top Nav -->
         <header class="top-nav">
             <a href="index.html" class="logo">Stratos<span>Weather</span></a>
 
-            <nav class="nav-links">
-                <a href="index.html" class="nav-link">🌤️ Dashboard</a>
-                <a href="globe.html" class="nav-link">🌐 3D Earth</a>
-                <a href="analytics.html" class="nav-link active">📊 Analytics</a>
-            </nav>
+            <!-- Search Bar with Geocoding Autocomplete -->
+            <div class="search-container">
+                <div class="search-pill">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="city-input" placeholder="Analyze climate telemetry for any city..." autocomplete="off">
+                </div>
+                <div id="autocomplete-list" class="autocomplete-suggestions glass"></div>
+            </div>
 
-            <div class="nav-controls">
-                <div class="time-box" id="current-time">Analytics Suite</div>
+            <!-- Navigation Links & Unit Controls -->
+            <div class="right-corner-group">
+                <nav class="nav-links">
+                    <a href="index.html" class="nav-link">🌤️ Dashboard</a>
+                    <a href="globe.html" class="nav-link">🌐 3D Earth</a>
+                    <a href="analytics.html" class="nav-link active">📊 Analytics</a>
+                </nav>
+
+                <div class="nav-controls">
+                    <button class="unit-toggle glass-btn" id="unit-toggle" title="Switch between °C and °F">°C</button>
+                    <div class="time-box" id="current-time">12:00 PM</div>
+                </div>
             </div>
         </header>
 
-        <!-- Preview Container -->
-        <main style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-top: 4rem;">
-            <div class="glass" style="max-width: 650px; padding: 3rem; border-radius: 32px;">
-                <div style="font-size: 3.5rem; margin-bottom: 1rem;">📊</div>
-                <h1 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 1rem;">Atmospheric Analytics Engine</h1>
-                <p style="color: var(--text-dim); font-size: 1.05rem; line-height: 1.6; margin-bottom: 2rem;">
-                    Deep graphical telemetry, 24-hour temperature spline curves, humidity vs. pressure correlation charts, and multi-day comparative bar analysis are scheduled for Page 3.
-                </p>
-                <div style="display: flex; gap: 1rem; justify-content: center;">
-                    <a href="globe.html" class="globe-action-btn" style="text-decoration: none; padding: 12px 24px; border-radius: 50px;">Explore 🌐 3D Earth View</a>
-                    <a href="index.html" class="unit-toggle" style="text-decoration: none; display: inline-flex; align-items: center;">Return to Dashboard</a>
+        <!-- City Header Banner -->
+        <section class="analytics-hero glass">
+            <div class="hero-left">
+                <div class="hero-badge">Deep Atmospheric Telemetry</div>
+                <div class="hero-title-row">
+                    <h1 id="analytics-city-name">Tokyo</h1>
+                    <span class="hero-country" id="analytics-country-name">Japan</span>
+                    <span class="hero-flag" id="analytics-flag">🇯🇵</span>
+                </div>
+                <div class="hero-coords" id="analytics-coords">Coordinates: 35.68° N, 139.65° E • Elevation: 40 m ASL</div>
+            </div>
+
+            <div class="hero-center">
+                <div class="hero-temp-box">
+                    <span class="hero-temp" id="analytics-temp">18</span><span class="hero-unit">°</span>
+                    <span class="hero-icon" id="analytics-icon">☀️</span>
+                </div>
+                <div class="hero-condition" id="analytics-condition">Mostly Sunny</div>
+                <div class="hero-feels" id="analytics-feels">Feels like 18° • High: 21° / Low: 14°</div>
+            </div>
+
+            <div class="hero-actions">
+                <a href="globe.html" id="btn-view-on-globe" class="glass-btn action-pill">
+                    <span>🌐 View on 3D Earth</span>
+                </a>
+                <a href="index.html" id="btn-view-dashboard" class="glass-btn action-pill">
+                    <span>🌤️ Open Dashboard</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- KPI Summary Ribbon -->
+        <section class="analytics-kpi-ribbon">
+            <div class="kpi-card glass">
+                <div class="kpi-label">24h Peak Temp</div>
+                <div class="kpi-value" id="kpi-max-temp">--°</div>
+                <div class="kpi-sub" id="kpi-max-temp-time">Max thermal reading</div>
+            </div>
+            <div class="kpi-card glass">
+                <div class="kpi-label">24h Min Temp</div>
+                <div class="kpi-value" id="kpi-min-temp">--°</div>
+                <div class="kpi-sub" id="kpi-min-temp-time">Diurnal trough</div>
+            </div>
+            <div class="kpi-card glass">
+                <div class="kpi-label">Mean Humidity</div>
+                <div class="kpi-value" id="kpi-humidity">--%</div>
+                <div class="kpi-sub" id="kpi-humidity-status">Normal relative saturation</div>
+            </div>
+            <div class="kpi-card glass">
+                <div class="kpi-label">Max Wind Gust</div>
+                <div class="kpi-value" id="kpi-wind">-- km/h</div>
+                <div class="kpi-sub" id="kpi-wind-dir">10m boundary layer</div>
+            </div>
+            <div class="kpi-card glass">
+                <div class="kpi-label">Peak UV Index</div>
+                <div class="kpi-value" id="kpi-uv">--</div>
+                <div class="kpi-sub" id="kpi-uv-risk">Moderate risk</div>
+            </div>
+            <div class="kpi-card glass">
+                <div class="kpi-label">Air Quality (AQI)</div>
+                <div class="kpi-value" id="kpi-aqi">--</div>
+                <div class="kpi-sub" id="kpi-aqi-status">US EPA Air Quality</div>
+            </div>
+        </section>
+
+        <!-- Analytics Visualization Grid -->
+        <main class="analytics-grid">
+            <!-- Chart 1: 24h Temperature & Feels-Like Spline Curve (Full Width) -->
+            <div class="chart-card glass full-width">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-badge">Hourly Micro-Forecast</div>
+                        <h2 class="chart-title">24-Hour Temperature & Thermal Perception Curve</h2>
+                    </div>
+                    <div class="chart-legend-custom">
+                        <span class="legend-dot temp-dot"></span><span>Ambient Temp</span>
+                        <span class="legend-dot feels-dot"></span><span>Apparent (Feels Like)</span>
+                    </div>
+                </div>
+                <div class="chart-wrapper spline-wrapper">
+                    <canvas id="tempSplineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: 7-Day Min/Max Thermal Range -->
+            <div class="chart-card glass">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-badge">Synoptic Forecast</div>
+                        <h2 class="chart-title">7-Day Thermal Amplitude (Min vs. Max)</h2>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="sevenDayRangeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 3: Atmospheric Dynamics (Tri-Axis Correlation) -->
+            <div class="chart-card glass">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-badge">Pressure Fronts & Saturation</div>
+                        <h2 class="chart-title">Atmospheric Correlation: Humidity, Wind & Pressure</h2>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="correlationChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 4: Solar UV Radiation & Daylight Spectrum Curve -->
+            <div class="chart-card glass">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-badge">Solar Insolation</div>
+                        <h2 class="chart-title">Diurnal UV Index & Solar Trajectory</h2>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="uvSolarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 5: Particulate Matter & Pollutant Radar Breakdown -->
+            <div class="chart-card glass">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-badge">Atmospheric Chemistry</div>
+                        <h2 class="chart-title">Air Quality Index (AQI) & Aerosol Polar Analysis</h2>
+                    </div>
+                </div>
+                <div class="chart-wrapper radar-wrapper">
+                    <canvas id="aqiRadarChart"></canvas>
                 </div>
             </div>
         </main>
+
+        <!-- Footer Attribution -->
+        <footer class="analytics-footer">
+            <p>
+                Telemetry powered by <strong>Open-Meteo High-Resolution Numerical Weather Prediction</strong>, 
+                <strong>Copernicus Sentinel Satellites</strong>, and <strong>NOAA GFS Models</strong>.
+            </p>
+        </footer>
     </div>
+
+    <!-- Analytics Engine Script -->
+    <script src="analytics.js"></script>
 </body>
 </html>
-
