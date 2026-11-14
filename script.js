@@ -274,6 +274,13 @@ function renderWeather(data, cityName, country) {
 
     const cityTitle = country ? `${cityName}, ${country}` : cityName;
     try { localStorage.setItem('stratos_active_city', cityName); } catch (e) {}
+
+    // Synchronize multi-page navigation links with active city parameter
+    const globeNavLink = document.querySelector('a.nav-link[href^="globe.html"]');
+    if (globeNavLink) globeNavLink.href = `globe.html?city=${encodeURIComponent(cityName)}`;
+    const analyticsNavLink = document.querySelector('a.nav-link[href^="analytics.html"]');
+    if (analyticsNavLink) analyticsNavLink.href = `analytics.html?city=${encodeURIComponent(cityName)}`;
+
     document.getElementById('city-name').innerText = cityTitle;
     document.getElementById('condition-text').innerText = conditionData.condition;
     document.getElementById('val-humidity').innerText = `${current.relative_humidity_2m}%`;

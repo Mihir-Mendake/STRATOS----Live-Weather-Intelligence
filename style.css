@@ -898,9 +898,15 @@ body.globe-page {
     color: var(--text-main);
 }
 
-.globe-action-btn {
+.card-actions-row {
+    display: flex;
+    gap: 10px;
     margin-top: 15px;
     width: 100%;
+}
+
+.globe-action-btn {
+    flex: 1;
     background: var(--accent);
     color: #0f172a;
     font-weight: 700;
@@ -911,13 +917,26 @@ body.globe-page {
     cursor: pointer;
     text-align: center;
     text-decoration: none;
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.25s ease;
+}
+
+.globe-action-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .globe-action-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.globe-action-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.18);
 }
 
 /* --- Floating Heatmap Legend --- */

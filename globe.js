@@ -913,11 +913,21 @@ function inspectCity(city) {
         noteEl.innerText = city.geoNote || `Geographic station located in the ${computeClimateZone(city.lat)} influenced by atmospheric global pressure regimes.`;
     }
 
-    // Link button to Dashboard
+    // Link action buttons to Dashboard and Analytics
     const openBtn = document.getElementById('card-open-dashboard');
     if (openBtn) {
         openBtn.href = `index.html?city=${encodeURIComponent(city.name)}`;
     }
+    const analyticsBtn = document.getElementById('card-open-analytics');
+    if (analyticsBtn) {
+        analyticsBtn.href = `analytics.html?city=${encodeURIComponent(city.name)}`;
+    }
+
+    // Synchronize top navigation dropdown links
+    const navDash = document.querySelector('#nav-dropdown-menu a[href^="index.html"]');
+    if (navDash) navDash.href = `index.html?city=${encodeURIComponent(city.name)}`;
+    const navAnalytics = document.querySelector('#nav-dropdown-menu a[href^="analytics.html"]');
+    if (navAnalytics) navAnalytics.href = `analytics.html?city=${encodeURIComponent(city.name)}`;
 
     // Show Card
     const card = document.getElementById('globe-card');
