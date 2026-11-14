@@ -107,7 +107,7 @@ async function loadAnalyticsForCity(city) {
 
     try {
         // Query 1: Open-Meteo High-Resolution Weather Model
-        const weatherUrl = `${OPEN_METEO_BASE}/forecast?latitude=${city.lat}&longitude=${city.lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,wind_direction_10m,surface_pressure&hourly=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,surface_pressure,uv_index,weather_code&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,weather_code&timezone=auto`;
+        const weatherUrl = `${OPEN_METEO_BASE}/forecast?latitude=${city.lat}&longitude=${city.lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,wind_direction_10m,surface_pressure&hourly=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,surface_pressure,uv_index,precipitation_probability,precipitation,weather_code&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,weather_code&timezone=auto`;
         const weatherResp = await fetch(weatherUrl);
         rawWeatherData = await weatherResp.json();
 
@@ -216,6 +216,7 @@ function renderAllCharts() {
     renderCorrelationChart();
     renderUvSolarChart();
     renderAqiRadarChart();
+    renderPrecipChart();
 }
 
 // ---------------------------------------------------
@@ -579,6 +580,104 @@ function renderAqiRadarChart() {
     });
 }
 
+// ---------------------------------------------------
+// CHART 6: PRECIPITATION PROBABILITY & VOLUME ACCUMULATION
+// ---------------------------------------------------
+function renderPrecipChart() {
+    destroyChart('precip');
+    const ctx = document.getElementById('precipChart');
+    if (!ctx || !rawWeatherData || !rawWeatherData.hourly) return;
+
+    const hourly = rawWeatherData.hourly;
+    const times = (hourly.time || []).slice(0, 24).map(t => {
+        const d = new Date(t);
+        return d.toLocaleTimeString([], { hour: 'numeric' });
+    });
+
+    const probs = (hourly.precipitation_probability || []).slice(0, 24).map(p => Number(p) || 0);
+    const rawMm = (hourly.precipitation || []).slice(0, 24).map(v => Number(v) || 0);
+    const volumes = currentUnit === 'F' 
+        ? rawMm.map(mm => Number((mm * 0.03937).toFixed(2)))
+        : rawMm.map(mm => Number(mm.toFixed(1)));
+
+    const volLabel = currentUnit === 'F' ? 'Accumulation (in)' : 'Accumulation (mm)';
+    const maxVol = Math.max(...volumes, 5);
+
+    chartInstances['precip'] = new Chart(ctx, {
+        data: {
+            labels: times,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: volLabel,
+                    data: volumes,
+                    backgroundColor: 'rgba(129, 140, 248, 0.45)',
+                    hoverBackgroundColor: '#818cf8',
+                    borderColor: '#818cf8',
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    yAxisID: 'yVol',
+                    order: 2
+                },
+                {
+                    type: 'line',
+                    label: 'Precipitation Probability (%)',
+                    data: probs,
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                    fill: true,
+                    borderWidth: 2.5,
+                    tension: 0.35,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#38bdf8',
+                    pointBorderColor: '#0f172a',
+                    pointBorderWidth: 1.5,
+                    pointHoverRadius: 6,
+                    yAxisID: 'yProb',
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.06)' },
+                    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }
+                },
+                yProb: {
+                    type: 'linear',
+                    position: 'left',
+                    min: 0,
+                    max: 100,
+                    grid: { color: 'rgba(255, 255, 255, 0.06)' },
+                    ticks: {
+                        callback: val => `${val}%`
+                    }
+                },
+                yVol: {
+                    type: 'linear',
+                    position: 'right',
+                    min: 0,
+                    max: currentUnit === 'F' ? Math.max(maxVol, 0.5) : Math.max(maxVol, 10),
+                    grid: { display: false },
+                    ticks: {
+                        callback: val => currentUnit === 'F' ? `${val} in` : `${val} mm`
+                    }
+                }
+            }
+        }
+    });
+}
+
 // ===================================================
 // 5. CITY AUTOCOMPLETE & SEARCH CONTROLLER
 // ===================================================
@@ -763,3 +862,4 @@ async function initAnalytics() {
 }
 
 window.addEventListener('DOMContentLoaded', initAnalytics);
+
