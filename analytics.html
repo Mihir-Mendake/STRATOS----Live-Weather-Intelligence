@@ -149,7 +149,13 @@
                         <div class="chart-badge">Synoptic Forecast</div>
                         <h2 class="chart-title">7-Day Thermal Amplitude (Min vs. Max)</h2>
                     </div>
-                    <button class="chart-snapshot-btn" data-chart="sevenDayRangeChart" data-name="7Day_Thermal_Amplitude" title="Save Chart as PNG Image">📷</button>
+                    <div class="chart-header-actions">
+                        <div class="chart-legend-custom">
+                            <span class="legend-dot" style="background: #f59e0b; box-shadow: 0 0 10px #f59e0b;"></span><span>Max Temp</span>
+                            <span class="legend-dot" style="background: #06b6d4; box-shadow: 0 0 10px #06b6d4;"></span><span>Min Temp</span>
+                        </div>
+                        <button class="chart-snapshot-btn" data-chart="sevenDayRangeChart" data-name="7Day_Thermal_Amplitude" title="Save Chart as PNG Image">📷</button>
+                    </div>
                 </div>
                 <div class="chart-wrapper">
                     <canvas id="sevenDayRangeChart"></canvas>
@@ -163,7 +169,14 @@
                         <div class="chart-badge">Pressure Fronts & Saturation</div>
                         <h2 class="chart-title">Atmospheric Correlation: Humidity, Wind & Pressure</h2>
                     </div>
-                    <button class="chart-snapshot-btn" data-chart="correlationChart" data-name="Atmospheric_Correlation" title="Save Chart as PNG Image">📷</button>
+                    <div class="chart-header-actions">
+                        <div class="chart-legend-custom">
+                            <span class="legend-dot" style="background: #34d399; box-shadow: 0 0 8px #34d399;"></span><span>Humidity</span>
+                            <span class="legend-dot" style="background: #38bdf8; box-shadow: 0 0 8px #38bdf8;"></span><span>Wind</span>
+                            <span class="legend-dot" style="background: #fbbf24; box-shadow: 0 0 8px #fbbf24;"></span><span>Pressure</span>
+                        </div>
+                        <button class="chart-snapshot-btn" data-chart="correlationChart" data-name="Atmospheric_Correlation" title="Save Chart as PNG Image">📷</button>
+                    </div>
                 </div>
                 <div class="chart-wrapper">
                     <canvas id="correlationChart"></canvas>
@@ -177,7 +190,12 @@
                         <div class="chart-badge">Solar Insolation</div>
                         <h2 class="chart-title">Diurnal UV Index & Solar Trajectory</h2>
                     </div>
-                    <button class="chart-snapshot-btn" data-chart="uvSolarChart" data-name="Diurnal_UV_Trajectory" title="Save Chart as PNG Image">📷</button>
+                    <div class="chart-header-actions">
+                        <div class="chart-legend-custom">
+                            <span class="legend-dot" style="background: #f59e0b; box-shadow: 0 0 10px #f59e0b;"></span><span>UV Solar Index</span>
+                        </div>
+                        <button class="chart-snapshot-btn" data-chart="uvSolarChart" data-name="Diurnal_UV_Trajectory" title="Save Chart as PNG Image">📷</button>
+                    </div>
                 </div>
                 <div class="chart-wrapper">
                     <canvas id="uvSolarChart"></canvas>
@@ -191,7 +209,12 @@
                         <div class="chart-badge">Atmospheric Chemistry</div>
                         <h2 class="chart-title">Air Quality Index (AQI) & Aerosol Polar Analysis</h2>
                     </div>
-                    <button class="chart-snapshot-btn" data-chart="aqiRadarChart" data-name="AQI_Aerosol_Radar" title="Save Chart as PNG Image">📷</button>
+                    <div class="chart-header-actions">
+                        <div class="chart-legend-custom">
+                            <span class="legend-dot" style="background: #38bdf8; box-shadow: 0 0 10px #38bdf8;"></span><span>Pollutants</span>
+                        </div>
+                        <button class="chart-snapshot-btn" data-chart="aqiRadarChart" data-name="AQI_Aerosol_Radar" title="Save Chart as PNG Image">📷</button>
+                    </div>
                 </div>
                 <div class="chart-wrapper radar-wrapper">
                     <canvas id="aqiRadarChart"></canvas>

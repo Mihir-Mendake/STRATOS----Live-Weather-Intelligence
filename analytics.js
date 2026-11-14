@@ -1012,40 +1012,157 @@ function downloadChartSnapshot(canvasId, baseName) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
 
-    // Create off-screen canvas to render clean dark background and header
+    const chart = (typeof Chart !== 'undefined' && Chart.getChart) ? Chart.getChart(canvas) : null;
+    const datasets = chart && chart.data && chart.data.datasets ? chart.data.datasets : [];
+
+    // Header and Legend Layout calculations
+    const padding = 32;
+    const hasLegend = datasets.length > 0;
+    const legendRowHeight = hasLegend ? 44 : 0;
+    const headerHeight = 65 + legendRowHeight;
+    const footerHeight = 28;
+
     const exportCanvas = document.createElement('canvas');
-    const padding = 30;
-    const headerHeight = 60;
     exportCanvas.width = canvas.width + padding * 2;
-    exportCanvas.height = canvas.height + padding * 2 + headerHeight;
+    exportCanvas.height = canvas.height + padding * 2 + headerHeight + footerHeight;
 
     const ctx = exportCanvas.getContext('2d');
 
-    // Fill dark futuristic slate background
+    // 1. Fill dark futuristic slate background
     const bgGrad = ctx.createLinearGradient(0, 0, 0, exportCanvas.height);
-    bgGrad.addColorStop(0, '#0b1120');
+    bgGrad.addColorStop(0, '#070d1e');
     bgGrad.addColorStop(1, '#0f172a');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
 
-    // Subtle border
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+    // Subtle cyan cyber border
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, exportCanvas.width - 2, exportCanvas.height - 2);
 
-    // Title & Branding
+    // 2. Title & Branding (Header Line 1)
     ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 18px Inter, system-ui, sans-serif';
-    ctx.fillText(`STRATOS WEATHER • ${activeCity.name.toUpperCase()}`, padding, padding + 18);
+    ctx.font = 'bold 20px Inter, system-ui, sans-serif';
+    ctx.fillText(`STRATOS WEATHER • ${activeCity.name.toUpperCase()}`, padding, padding + 20);
 
+    // Station Coordinates on Top Right
+    const coordsStr = `Station: ${Math.abs(activeCity.lat).toFixed(2)}° ${activeCity.lat >= 0 ? 'N' : 'S'}, ${Math.abs(activeCity.lng).toFixed(2)}° ${activeCity.lng >= 0 ? 'E' : 'W'} • Elev: ${activeCity.elevation || 35} m`;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.font = '11px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(coordsStr, exportCanvas.width - padding, padding + 20);
+    ctx.textAlign = 'left';
+
+    // 3. Subtitle / Timestamp (Header Line 2)
     ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
     ctx.font = '12px Inter, system-ui, sans-serif';
-    ctx.fillText(`${baseName.replace(/_/g, ' ')} • Generated ${new Date().toLocaleString()}`, padding, padding + 38);
+    ctx.fillText(`${baseName.replace(/_/g, ' ')} • Generated ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()} • Unit: °${currentUnit}`, padding, padding + 40);
 
-    // Draw chart content
+    // 4. Dedicated Visual Legend Banner (Header Line 3)
+    if (hasLegend) {
+        const legendY = padding + 54;
+        const legendHeight = 34;
+        const legendWidth = exportCanvas.width - padding * 2;
+
+        // Pill background
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+            ctx.roundRect(padding, legendY, legendWidth, legendHeight, 8);
+        } else {
+            ctx.rect(padding, legendY, legendWidth, legendHeight);
+        }
+        ctx.fill();
+        ctx.stroke();
+
+        // Legend Badge
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+        ctx.fillText('INDICATORS:', padding + 14, legendY + 22);
+
+        let curX = padding + 95;
+
+        datasets.forEach(ds => {
+            const label = ds.label || 'Metric';
+            let color = '#38bdf8';
+            if (typeof ds.borderColor === 'string' && (ds.borderColor.startsWith('#') || ds.borderColor.startsWith('rgb'))) {
+                color = ds.borderColor;
+            } else if (typeof ds.backgroundColor === 'string' && (ds.backgroundColor.startsWith('#') || ds.backgroundColor.startsWith('rgb'))) {
+                color = ds.backgroundColor;
+            } else if (label.toLowerCase().includes('max')) {
+                color = '#f59e0b';
+            } else if (label.toLowerCase().includes('min')) {
+                color = '#06b6d4';
+            }
+
+            const isDashed = Array.isArray(ds.borderDash) && ds.borderDash.length > 0;
+            const isBar = ds.type === 'bar' || (!ds.type && chart && chart.config.type === 'bar');
+
+            ctx.save();
+            if (isBar) {
+                // Mini bar swatch
+                ctx.fillStyle = color;
+                ctx.fillRect(curX, legendY + 11, 16, 12);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(curX, legendY + 11, 16, 12);
+                curX += 22;
+            } else {
+                // Line swatch with dot
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.5;
+                if (isDashed) {
+                    ctx.setLineDash([4, 3]);
+                }
+                ctx.beginPath();
+                ctx.moveTo(curX, legendY + 17);
+                ctx.lineTo(curX + 22, legendY + 17);
+                ctx.stroke();
+
+                // Circle dot
+                ctx.setLineDash([]);
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(curX + 11, legendY + 17, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                curX += 28;
+            }
+            ctx.restore();
+
+            // Label text
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '600 12px Inter, system-ui, sans-serif';
+            ctx.fillText(label, curX, legendY + 22);
+
+            // Add note if dashed line
+            if (isDashed) {
+                const labelW = ctx.measureText(label).width;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+                ctx.font = '10px Inter, system-ui, sans-serif';
+                ctx.fillText('(Dashed Line)', curX + labelW + 6, legendY + 22);
+                curX += labelW + ctx.measureText('(Dashed Line)').width + 24;
+            } else {
+                curX += ctx.measureText(label).width + 22;
+            }
+        });
+    }
+
+    // 5. Draw the chart canvas
     ctx.drawImage(canvas, padding, padding + headerHeight);
 
-    // Export image
+    // 6. Draw clean footer attribution
+    const footerY = exportCanvas.height - padding + 16;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.font = '10px Inter, system-ui, sans-serif';
+    ctx.fillText('STRATOS WEATHER INTELLIGENCE • NUMERICAL WEATHER PREDICTION MODEL (ECMWF / NOAA / DWD)', padding, footerY);
+
+    ctx.textAlign = 'right';
+    ctx.fillText('SCIENTIFIC & EDUCATIONAL TELEMETRY', exportCanvas.width - padding, footerY);
+    ctx.textAlign = 'left';
+
+    // 7. Trigger instant clean download
     const dataUrl = exportCanvas.toDataURL('image/png');
     const link = document.createElement('a');
     const cleanCity = activeCity.name.replace(/[^a-zA-Z0-9_-]/g, "_");
