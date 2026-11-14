@@ -827,6 +827,7 @@ function updateClock() {
 async function initAnalytics() {
     setupUnitToggle();
     setupSearch();
+    setupExportAndSnapshots();
     updateClock();
     setInterval(updateClock, 1000);
 
@@ -859,6 +860,200 @@ async function initAnalytics() {
 
     // Default Tokyo fallback
     loadAnalyticsForCity(activeCity);
+}
+
+// ===================================================
+// 8. TELEMETRY EXPORT & SNAPSHOT CONTROLLER
+// ===================================================
+
+function setupExportAndSnapshots() {
+    const exportBtn = document.getElementById('btn-export-menu');
+    const exportMenu = document.getElementById('export-dropdown-menu');
+    const csvBtn = document.getElementById('btn-export-csv');
+    const jsonBtn = document.getElementById('btn-export-json');
+
+    if (exportBtn && exportMenu) {
+        exportBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            exportMenu.classList.toggle('show');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!exportMenu.contains(e.target) && e.target !== exportBtn) {
+                exportMenu.classList.remove('show');
+            }
+        });
+    }
+
+    if (csvBtn) {
+        csvBtn.addEventListener('click', () => {
+            if (exportMenu) exportMenu.classList.remove('show');
+            exportTelemetryCSV();
+        });
+    }
+
+    if (jsonBtn) {
+        jsonBtn.addEventListener('click', () => {
+            if (exportMenu) exportMenu.classList.remove('show');
+            exportTelemetryJSON();
+        });
+    }
+
+    // Chart snapshot buttons
+    document.querySelectorAll('.chart-snapshot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const chartId = btn.getAttribute('data-chart');
+            const chartName = btn.getAttribute('data-name') || chartId;
+            downloadChartSnapshot(chartId, chartName);
+        });
+    });
+}
+
+function exportTelemetryCSV() {
+    if (!rawWeatherData || !rawWeatherData.hourly) {
+        alert("Telemetry data is still loading. Please wait a moment.");
+        return;
+    }
+
+    const hourly = rawWeatherData.hourly;
+    const times = hourly.time || [];
+    const temps = hourly.temperature_2m || [];
+    const feels = hourly.apparent_temperature || [];
+    const humidities = hourly.relative_humidity_2m || [];
+    const winds = hourly.wind_speed_10m || [];
+    const pressures = hourly.surface_pressure || [];
+    const uvs = hourly.uv_index || [];
+    const probs = hourly.precipitation_probability || [];
+    const precips = hourly.precipitation || [];
+
+    const headers = [
+        "Timestamp",
+        `Ambient_Temperature_${currentUnit}`,
+        `Feels_Like_${currentUnit}`,
+        "Humidity_Percent",
+        `Wind_Speed_${currentUnit === 'F' ? 'mph' : 'kmh'}`,
+        `Surface_Pressure_${currentUnit === 'F' ? 'inHg' : 'hPa'}`,
+        "UV_Index",
+        "Precipitation_Probability_Percent",
+        `Precipitation_Volume_${currentUnit === 'F' ? 'in' : 'mm'}`
+    ];
+
+    const rows = [headers.join(",")];
+
+    for (let i = 0; i < times.length; i++) {
+        const time = times[i];
+        const temp = formatTemp(temps[i]);
+        const feel = formatTemp(feels[i]);
+        const hum = humidities[i] !== undefined ? humidities[i] : "";
+        const wind = currentUnit === 'F' ? (Number(winds[i] || 0) * 0.621371).toFixed(1) : (Number(winds[i] || 0)).toFixed(1);
+        const press = currentUnit === 'F' ? (Number(pressures[i] || 1013) * 0.02953).toFixed(2) : (Number(pressures[i] || 1013)).toFixed(1);
+        const uv = uvs[i] !== undefined ? uvs[i] : "";
+        const prob = probs[i] !== undefined ? probs[i] : 0;
+        const vol = currentUnit === 'F' ? (Number(precips[i] || 0) * 0.03937).toFixed(2) : (Number(precips[i] || 0)).toFixed(1);
+
+        rows.push([
+            `"${time}"`,
+            temp,
+            feel,
+            hum,
+            wind,
+            press,
+            uv,
+            prob,
+            vol
+        ].join(","));
+    }
+
+    const csvContent = rows.join("\r\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const cleanCity = activeCity.name.replace(/[^a-zA-Z0-9_-]/g, "_");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Stratos_${cleanCity}_Hourly_Climate_Telemetry.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function exportTelemetryJSON() {
+    if (!rawWeatherData) {
+        alert("Telemetry data is still loading. Please wait a moment.");
+        return;
+    }
+
+    const exportPayload = {
+        meta: {
+            service: "Stratos Weather Climate Intelligence Suite",
+            version: "2.0.0",
+            exportedAt: new Date().toISOString(),
+            temperatureUnit: `°${currentUnit}`,
+            station: activeCity
+        },
+        numericalModel: rawWeatherData,
+        atmosphericChemistry: rawAirData
+    };
+
+    const jsonString = JSON.stringify(exportPayload, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const cleanCity = activeCity.name.replace(/[^a-zA-Z0-9_-]/g, "_");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Stratos_${cleanCity}_Raw_Atmospheric_Package.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function downloadChartSnapshot(canvasId, baseName) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    // Create off-screen canvas to render clean dark background and header
+    const exportCanvas = document.createElement('canvas');
+    const padding = 30;
+    const headerHeight = 60;
+    exportCanvas.width = canvas.width + padding * 2;
+    exportCanvas.height = canvas.height + padding * 2 + headerHeight;
+
+    const ctx = exportCanvas.getContext('2d');
+
+    // Fill dark futuristic slate background
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, exportCanvas.height);
+    bgGrad.addColorStop(0, '#0b1120');
+    bgGrad.addColorStop(1, '#0f172a');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+    // Subtle border
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, exportCanvas.width - 2, exportCanvas.height - 2);
+
+    // Title & Branding
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 18px Inter, system-ui, sans-serif';
+    ctx.fillText(`STRATOS WEATHER • ${activeCity.name.toUpperCase()}`, padding, padding + 18);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    ctx.font = '12px Inter, system-ui, sans-serif';
+    ctx.fillText(`${baseName.replace(/_/g, ' ')} • Generated ${new Date().toLocaleString()}`, padding, padding + 38);
+
+    // Draw chart content
+    ctx.drawImage(canvas, padding, padding + headerHeight);
+
+    // Export image
+    const dataUrl = exportCanvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    const cleanCity = activeCity.name.replace(/[^a-zA-Z0-9_-]/g, "_");
+    link.download = `Stratos_${cleanCity}_${baseName}.png`;
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 window.addEventListener('DOMContentLoaded', initAnalytics);
