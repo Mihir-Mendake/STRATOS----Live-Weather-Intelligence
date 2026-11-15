@@ -35,6 +35,9 @@
                 <div class="search-pill">
                     <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     <input type="text" id="city-input" placeholder="Search City (Mumbai, Tokyo, London...)" autocomplete="off">
+                    <button class="geo-btn" id="btn-geolocation" title="Use My Current Location" type="button">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"></circle><line x1="12" y1="1" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="23"></line><line x1="1" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="23" y2="12"></line></svg>
+                    </button>
                 </div>
                 
                 <div id="autocomplete-list" class="autocomplete-suggestions glass"></div>
@@ -60,15 +63,27 @@
                         <button id="btn-favorite" class="fav-icon-btn" title="Add / Remove Favorite">☆</button>
                     </div>
                     <p id="current-date">-- --</p>
+
+                    <!-- Natural Language Forecast Sentence -->
+                    <div class="weather-summary-box" id="weather-summary">
+                        <span class="summary-bullet">●</span>
+                        <span id="weather-summary-text">Analyzing local atmospheric conditions...</span>
+                    </div>
                 </div>
                 
                 <div class="temp-hero">
                     <div class="temp-number">
                         <span id="main-temp">0</span><span class="degree-symbol">°</span>
                     </div>
-                    <div class="condition-badge">
-                        <div id="weather-icon">☀️</div>
-                        <span id="condition-text">Sunny</span>
+                    <div class="temp-meta-column">
+                        <div class="condition-badge">
+                            <div id="weather-icon">☀️</div>
+                            <span id="condition-text">Sunny</span>
+                        </div>
+                        <div class="high-low-badge" id="high-low-badge">
+                            <span class="hl-tag high">H: <span id="val-day-high">--</span>°</span>
+                            <span class="hl-tag low">L: <span id="val-day-low">--</span>°</span>
+                        </div>
                     </div>
                 </div>
 

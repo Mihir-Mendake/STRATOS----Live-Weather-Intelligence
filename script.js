@@ -48,6 +48,12 @@ function initApp() {
         btnFavorite.addEventListener('click', toggleCurrentFavorite);
     }
 
+    // Setup Geolocation GPS Button
+    const geoBtn = document.getElementById('btn-geolocation');
+    if (geoBtn) {
+        geoBtn.addEventListener('click', handleGeolocationClick);
+    }
+
     // Load initial favorites
     loadFavorites();
 
@@ -96,6 +102,30 @@ function initApp() {
     }
 
     startTime();
+}
+
+// 2b. GPS GEOLOCATION HANDLER
+function handleGeolocationClick() {
+    const geoBtn = document.getElementById('btn-geolocation');
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        return;
+    }
+    if (geoBtn) geoBtn.classList.add('locating');
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            if (geoBtn) geoBtn.classList.remove('locating');
+            const { latitude, longitude } = position.coords;
+            updateWeather(latitude, longitude, "My Location");
+        },
+        (error) => {
+            if (geoBtn) geoBtn.classList.remove('locating');
+            console.warn("Geolocation denied or failed:", error.message);
+            alert("Could not access your location. Please check browser permissions.");
+        },
+        { timeout: 8000, enableHighAccuracy: true }
+    );
 }
 
 // 3. UNIT CONVERSIONS (°C <-> °F)
@@ -347,6 +377,17 @@ function renderWeather(data, cityName, country) {
         document.getElementById('val-sunset').innerText = formatTime(daily.sunset[0], currentCityTimezone);
     }
 
+    // Daily High & Low
+    const highTemp = daily && daily.temperature_2m_max && daily.temperature_2m_max.length > 0 ? formatTemp(daily.temperature_2m_max[0]) : formatTemp(current.temperature_2m + 2);
+    const lowTemp = daily && daily.temperature_2m_min && daily.temperature_2m_min.length > 0 ? formatTemp(daily.temperature_2m_min[0]) : formatTemp(current.temperature_2m - 3);
+    const highEl = document.getElementById('val-day-high');
+    const lowEl = document.getElementById('val-day-low');
+    if (highEl) highEl.innerText = highTemp;
+    if (lowEl) lowEl.innerText = lowTemp;
+
+    // Natural Language Forecast Sentence
+    generateWeatherSummary(current, daily, data.hourly, conditionData);
+
     document.getElementById('weather-icon').innerText = conditionData.icon;
 
     // Humidity progress bar
@@ -363,6 +404,53 @@ function renderWeather(data, cityName, country) {
     updateHourly(data.hourly);
     updateForecast(daily);
     initWeatherAnimation(conditionData.condition);
+}
+
+// Smart Natural Language Forecast Generator
+function generateWeatherSummary(current, daily, hourly, conditionData) {
+    const summaryEl = document.getElementById('weather-summary-text');
+    if (!summaryEl) return;
+
+    const condition = conditionData ? conditionData.condition : 'Fair';
+    const maxT = daily && daily.temperature_2m_max && daily.temperature_2m_max.length > 0 ? formatTemp(daily.temperature_2m_max[0]) : null;
+    const minT = daily && daily.temperature_2m_min && daily.temperature_2m_min.length > 0 ? formatTemp(daily.temperature_2m_min[0]) : null;
+    const windSpeed = current.wind_speed_10m || 0;
+    const windStr = formatWindSpeed(windSpeed);
+
+    // Precipitation probability check
+    let rainNote = "Dry conditions expected all day.";
+    if (daily && daily.precipitation_probability_max && daily.precipitation_probability_max.length > 0) {
+        const popMax = daily.precipitation_probability_max[0];
+        if (popMax >= 60) {
+            rainNote = `High chance of rain (${popMax}%). Carrying an umbrella is recommended.`;
+        } else if (popMax >= 30) {
+            rainNote = `Scattered showers possible (${popMax}% chance).`;
+        } else if (popMax >= 15) {
+            rainNote = `Low precipitation risk (${popMax}%).`;
+        }
+    } else if (hourly && hourly.precipitation_probability) {
+        const next12Pop = hourly.precipitation_probability.slice(0, 12);
+        const maxPop = Math.max(...next12Pop, 0);
+        if (maxPop >= 50) {
+            rainNote = `Showers expected in the area (${maxPop}% chance).`;
+        }
+    }
+
+    let tempSummary = "";
+    if (maxT !== null && minT !== null) {
+        tempSummary = `High near ${maxT}°, low around ${minT}°.`;
+    }
+
+    let windNote = "";
+    if (windSpeed > 35) {
+        windNote = `Brisk winds gusting around ${windStr}.`;
+    } else if (windSpeed > 15) {
+        windNote = `Moderate breeze at ${windStr}.`;
+    } else {
+        windNote = `Gentle breeze at ${windStr}.`;
+    }
+
+    summaryEl.innerText = `${condition} conditions today. ${tempSummary} ${windNote} ${rainNote}`;
 }
 
 function updateHourly(hourly) {
@@ -385,39 +473,76 @@ function updateHourly(hourly) {
         const weatherCode = hourly.weather_code ? hourly.weather_code[index] : 0;
         const { icon } = mapWeatherCode(weatherCode, isDay);
 
+        const pop = hourly.precipitation_probability ? Number(hourly.precipitation_probability[index]) || 0 : 0;
+        const popBadge = pop >= 15 ? `<span class="hourly-pop">💧${Math.round(pop)}%</span>` : '';
+
         const item = document.createElement('div');
         item.className = 'hourly-item';
         item.innerHTML = `
             <span class="h-time">${hourLabel}</span>
             <span class="h-icon">${icon}</span>
+            ${popBadge}
             <span class="h-temp">${temp}°</span>
         `;
         container.appendChild(item);
     }
 }
 
+// Apple Weather-Style 7-Day Forecast with Dynamic Min-Max Temperature Range Track Bars
 function updateForecast(daily) {
     const container = document.getElementById('forecast-list');
     if (!container || !daily || !daily.time || !daily.weather_code) return;
     container.innerHTML = '';
 
-    for (let i = 1; i < Math.min(daily.time.length, 8); i++) {
+    const daysCount = Math.min(daily.time.length, 7);
+
+    // Compute week-wide minimum and maximum to scale all bars consistently
+    const allMins = (daily.temperature_2m_min || []).slice(0, daysCount).map(c => Number(c) || 0);
+    const allMaxs = (daily.temperature_2m_max || []).slice(0, daysCount).map(c => Number(c) || 0);
+    const weekMin = allMins.length > 0 ? Math.min(...allMins) : 0;
+    const weekMax = allMaxs.length > 0 ? Math.max(...allMaxs) : 40;
+    const rangeSpan = Math.max(weekMax - weekMin, 1);
+
+    const currentTempC = currentCityData && currentCityData.current ? currentCityData.current.temperature_2m : null;
+
+    for (let i = 0; i < daysCount; i++) {
         const dateStr = daily.time[i];
         const date = new Date(dateStr);
-        const dayName = date.toLocaleDateString(undefined, { weekday: 'short' });
-        const maxTemp = formatTemp(daily.temperature_2m_max[i]);
-        const minTemp = daily.temperature_2m_min ? formatTemp(daily.temperature_2m_min[i]) : null;
+        const dayName = i === 0 ? 'Today' : date.toLocaleDateString(undefined, { weekday: 'short' });
+        
+        const rawMax = daily.temperature_2m_max[i];
+        const rawMin = daily.temperature_2m_min ? daily.temperature_2m_min[i] : rawMax - 5;
+        const maxDisplay = formatTemp(rawMax);
+        const minDisplay = formatTemp(rawMin);
 
         const weatherCode = daily.weather_code[i];
         const { icon } = mapWeatherCode(weatherCode, true);
 
-        container.innerHTML += `
-            <div class="forecast-day">
-                <span class="day">${dayName}</span>
-                <span class="f-icon">${icon}</span>
-                <span class="f-temp">${maxTemp}°</span>
-                ${minTemp !== null ? `<span style="font-size: 0.75rem; color: var(--text-dim); display: block;">${minTemp}°</span>` : ''}
-            </div>`;
+        // Calculate bar geometry (0% to 100%)
+        const leftPercent = Math.max(0, Math.min(100, ((rawMin - weekMin) / rangeSpan) * 100));
+        const rightPercent = Math.max(0, Math.min(100, ((rawMax - weekMin) / rangeSpan) * 100));
+        const barWidth = Math.max(leftPercent <= rightPercent ? rightPercent - leftPercent : 5, 8);
+
+        // If today, calculate current temperature indicator dot on the track
+        let currentDotHtml = '';
+        if (i === 0 && currentTempC !== null) {
+            const dotPercent = Math.max(0, Math.min(100, ((currentTempC - weekMin) / rangeSpan) * 100));
+            currentDotHtml = `<span class="range-bar-current-dot" style="left: ${dotPercent}%;"></span>`;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'forecast-row-apple';
+        row.innerHTML = `
+            <span class="f-day">${dayName}</span>
+            <span class="f-icon-wrap">${icon}</span>
+            <span class="f-temp-min">${minDisplay}°</span>
+            <div class="range-bar-track">
+                <div class="range-bar-fill" style="left: ${leftPercent}%; width: ${barWidth}%;"></div>
+                ${currentDotHtml}
+            </div>
+            <span class="f-temp-max">${maxDisplay}°</span>
+        `;
+        container.appendChild(row);
     }
 }
 
