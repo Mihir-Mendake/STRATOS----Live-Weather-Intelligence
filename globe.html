@@ -33,8 +33,9 @@
                     <!-- 1. Fly To Dropdown Button -->
                     <div class="fly-to-dropdown-container">
                         <button class="glass-dropdown-btn" id="btn-fly-to-dropdown" type="button">
-                            <span>⚡ Fly To City</span>
-                            <span class="dropdown-arrow">▼</span>
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                            <span>Fly To Station</span>
+                            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </button>
                         <div class="glass-dropdown-menu" id="fly-to-menu">
                             <!-- Populated dynamically with global cities -->
@@ -44,8 +45,9 @@
                     <!-- 2. Globe Controls Dropdown Button (Relocated from bottom) -->
                     <div class="fly-to-dropdown-container">
                         <button class="glass-dropdown-btn" id="btn-controls-dropdown" type="button">
-                            <span>⚙️ Globe Controls</span>
-                            <span class="dropdown-arrow">▼</span>
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                            <span>Atmospheric Layers</span>
+                            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </button>
                         <div class="glass-dropdown-menu controls-menu" id="controls-menu">
                             <div class="menu-section-header">Base Layers</div>
@@ -110,19 +112,23 @@
                 <!-- Single Navigation Menu Dropdown Button -->
                 <div class="fly-to-dropdown-container">
                     <button class="glass-dropdown-btn" id="btn-nav-dropdown" type="button">
-                        <span>🧭 Navigation</span>
-                        <span class="dropdown-arrow">▼</span>
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                        <span>Navigation</span>
+                        <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                     <div class="glass-dropdown-menu nav-menu" id="nav-dropdown-menu">
                         <a href="index.html" class="fly-to-item">
-                            <span>🌤️ Dashboard</span>
+                            <svg class="nav-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                            <span>Dashboard</span>
                         </a>
                         <a href="globe.html" class="fly-to-item active-page">
-                            <span>🌐 3D Earth</span>
+                            <svg class="nav-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                            <span>3D Earth</span>
                             <span class="badge-active">Active</span>
                         </a>
                         <a href="analytics.html" class="fly-to-item">
-                            <span>📊 Analytics</span>
+                            <svg class="nav-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                            <span>Analytics</span>
                         </a>
                     </div>
                 </div>
@@ -198,8 +204,14 @@
                 </div>
 
                 <div class="card-actions-row">
-                    <a href="#" id="card-open-dashboard" class="globe-action-btn">🌤️ Dashboard</a>
-                    <a href="#" id="card-open-analytics" class="globe-action-btn secondary">📊 Analytics</a>
+                    <a href="#" id="card-open-dashboard" class="globe-action-btn">
+                        <svg class="btn-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" id="card-open-analytics" class="globe-action-btn secondary">
+                        <svg class="btn-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                        <span>Analytics</span>
+                    </a>
                 </div>
             </div>
 

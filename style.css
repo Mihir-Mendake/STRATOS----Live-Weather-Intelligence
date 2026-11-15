@@ -1,10 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
     /* Default Dark/Cloudy Theme */
-    --bg-primary: #0f172a;
+    --bg-primary: #0a0f1d;
     --accent: #38bdf8;
-    --accent-glow: rgba(56, 189, 248, 0.3);
-    --glass: rgba(255, 255, 255, 0.05);
-    --glass-border: rgba(255, 255, 255, 0.15);
+    --accent-glow: rgba(56, 189, 248, 0.25);
+    --glass: rgba(15, 23, 42, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.08);
     --text-main: #f8fafc;
     --text-dim: #94a3b8;
     --sun-gradient: radial-gradient(circle, #ffbd3f 0%, #ff8a05 100%);
@@ -50,7 +55,92 @@ body.weather-storm {
     --glass-border: rgba(192, 132, 252, 0.25);
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-sans); }
+
+.mono-num,
+.kpi-value,
+.hero-temp,
+.main-temp,
+.time-box,
+.geo-stat-item strong,
+.hero-coords,
+.telemetry-live-badge {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.3px;
+}
+
+/* --- SVG Icon System (Professional Vector Icons) --- */
+.nav-icon, .btn-icon, .btn-pill-icon, .nav-dropdown-icon {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    flex-shrink: 0;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.chevron-icon {
+    width: 13px;
+    height: 13px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    margin-left: 3px;
+    opacity: 0.7;
+    transition: transform 0.2s ease;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.btn-action-icon {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    margin-right: 6px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.chart-snapshot-btn svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    pointer-events: none;
+}
+
+/* --- Live Telemetry Stream Indicator --- */
+.telemetry-live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    padding: 5px 12px;
+    border-radius: 50px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #34d399;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.telemetry-pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: livePulse 2s infinite ease-in-out;
+}
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.8); }
+}
 
 body {
     background: var(--bg-primary);
