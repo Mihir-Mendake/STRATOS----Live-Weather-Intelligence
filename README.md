@@ -1,112 +1,130 @@
-# ☀️ Stratos Weather - Full-Stack Immersive Weather Application
+# 🌐 STRATOS WEATHER — Atmospheric & Climate Intelligence Suite
 
-Stratos Weather is a modern, full-stack weather dashboard built with a **Node.js/Express** backend and a responsive glassmorphism frontend (HTML5, CSS3, JavaScript ES6+). It provides real-time weather analytics, 24-hour hourly forecasts, 7-day outlooks, air quality index (AQI), persistent bookmarks/favorites, unit switching (°C / °F), dynamic condition themes, and canvas weather particle animations.
+[![Stratos Suite](https://img.shields.io/badge/STRATOS-Climate%20Intelligence%20Suite-0284c7?style=for-the-badge&logo=satellite&logoColor=white)](https://github.com/Mihir-Mendake/STRATOS----Live-Weather-Intelligence)
+[![WebGL 3D Earth](https://img.shields.io/badge/WebGL-Three.js%20%2F%20Globe.gl-059669?style=for-the-badge&logo=webgl&logoColor=white)](https://globe.gl/)
+[![Chart.js 4.4](https://img.shields.io/badge/Telemetry-Chart.js%20v4.4-f59e0b?style=for-the-badge&logo=chartdotjs&logoColor=white)](https://www.chartjs.org/)
+[![Node.js Express](https://img.shields.io/badge/Backend-Express.js%20%2B%20Open--Meteo-6366f1?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 
-![Stratos Weather](https://img.shields.io/badge/Stratos--Weather-Full--Stack%20App-blue?style=for-the-badge)
-![Node.js](https://img.shields.io/badge/Node.js-v24+-green?style=for-the-badge&logo=node.js&logoColor=white)
-![Express](https://img.shields.io/badge/Express.js-Backend-black?style=for-the-badge&logo=express&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow?style=for-the-badge&logo=javascript&logoColor=white)
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+**Stratos Weather** is a full-stack, 3-page **Atmospheric & Climate Intelligence Suite** designed for meteorologists, geography students, data scientists, and daily users. It combines real-time numerical weather prediction, interactive 3D WebGL Earth modeling with geophysical layers (Rossby waves, ocean gyres, tectonic fault lines), deep multi-axis telemetry graphs, and scientific CSV/JSON data export pipelines.
 
 ---
 
-## 🌟 Highlights & Key Features
+## 🏛️ Multi-Page Suite Architecture
 
-- **Full-Stack Architecture**: Express.js server providing a unified API layer, caching, and static asset hosting.
-- **24-Hour Hourly Forecast**: Interactive horizontal scroll strip displaying upcoming hourly weather and icons.
-- **7-Day Extended Forecast**: Daily minimum/maximum temperatures and weather state icons.
-- **Air Quality & Atmospheric Metrics**: Real-time US AQI status, UV index, barometric pressure (hPa), humidity, visibility, and wind speeds.
-- **Unit Toggle (°C / °F)**: Instant Celsius and Fahrenheit switching across temperature, wind (km/h vs mph), and visibility (km vs mi).
-- **Persistent Favorites**: Save and access bookmarked cities across sessions via `/api/favorites` and quick-select chips.
-- **Dynamic Condition Themes**: 5 adaptive CSS themes (Sunny, Cloudy, Rain, Snow, Storm) that automatically adjust palettes and glow accents.
-- **Animated Weather Canvas**: Weather-responsive canvas particle engine for rain, snow, storms, sunny sun motes, and misty clouds.
-- **Accurate City Local Time**: Synchronizes clock to the queried city's exact timezone offset.
-- **Server Caching**: In-memory caching on the backend to reduce external API load and prevent rate limits.
+```
+STRATOS----Live-Weather-Intelligence/
+├── index.html        # Page 1: Live Synoptic Weather Dashboard
+├── globe.html        # Page 2: 3D Earth Geophysical Climate Sphere
+├── analytics.html    # Page 3: Synoptic Climate Analytics & Telemetry Engine
+├── style.css         # Unified Aerospace Glassmorphic Design System & Vector Icons
+├── script.js         # Dashboard Logic, Weather Canvas Particle Engine & Caching
+├── globe.js          # WebGL 3D Globe Controller, Rossby Waves & Ocean Conveyor
+├── analytics.js      # Chart.js 4.4 Engine, Scientific CSV/JSON Export & Snapshots
+├── server/           # Express.js Backend Proxy, Caching & Favorites Storage
+│   ├── server.js     # Express server & static asset host
+│   └── routes/       # Weather, search & favorites proxy routes
+└── ROADMAP.md        # Feature Spec & Architecture Document
+```
+
+---
+
+## 🌟 The 3-Page Suite
+
+### 🌤️ Page 1: Live Weather Dashboard (`index.html`)
+- **Real-Time Atmospheric Observation**: Ambient & apparent ("feels like") temperature, relative humidity, wind velocity with cardinal bearing, barometric surface pressure, UV index, and visibility.
+- **24-Hour Horizontal Hourly Micro-Forecast**: Responsive scrollable strip with interactive left/right navigation controls and hourly condition icons.
+- **7-Day Extended Forecast**: Synoptic thermal outlook with daily maximums and minimums.
+- **Atmospheric Canvas Particle Simulator**: Live HTML5 Canvas rendering dynamic weather particles (falling raindrops, snowflakes, storm lightning, sunny dust motes, and foggy clouds).
+- **Persistent Bookmarks & Search History**: Save and manage global stations stored across sessions.
+
+---
+
+### 🌐 Page 2: 3D Earth Climate Sphere (`globe.html`)
+Powered by **Three.js** and **Globe.gl** with real physical geography:
+- **Continuous Rossby Planetary Waves (Jet Streams)**: Realistic mathematical harmonic wave superposition simulating upper-troposphere meandering winds (~10–12 km altitude) with Coriolis deflection.
+- **Closed-Loop Oceanic Gyres & Global Conveyor Belt**: Continuous circulating ocean currents including the Gulf Stream, North Atlantic Drift, Kuroshio, California Current, and the Great Global Ocean Conveyor.
+- **Tectonic Plates & Ring of Fire**: Real global fault line boundaries (Pacific Ring of Fire, Mid-Atlantic Ridge) for educational geography exploration.
+- **Pole-to-Pole Geographic Graticule**: Continuous meridians ($-90^\circ$ to $+90^\circ$) converging at the poles, alongside equator and tropic rings ($360^\circ$ closed parallels).
+- **Global Thermal Heatmap**: Real-time color-ramped temperature distribution across latitude bands.
+- **Student Station Inspector**: Inspect any global pin to examine coordinates, elevation, live conditions, local solar time, and automated **Köppen-Geiger climate classification** (e.g. *Cfa — Humid Subtropical*, *Cfb — Oceanic*, *Aw — Tropical Savanna*).
+- **Smooth Fly-To Orbiting**: 21 pre-pinned global hubs with cinematic camera transitions.
+
+---
+
+### 📊 Page 3: Climate Analytics & Telemetry (`analytics.html`)
+A scientific visualization engine powered by **Chart.js 4.4**:
+1. **24-Hour Diurnal Temperature Spline**: Dual-series curve comparing ambient temperature vs. thermal perception (feels-like) with shaded boundary layer fill.
+2. **7-Day Thermal Amplitude**: Grouped high/low bars illustrating weekly warming and cooling trends.
+3. **Atmospheric Front Correlation (Tri-Axis)**: Correlates **Relative Humidity (%)**, **Wind Speed (km/h or mph)**, and **Barometric Pressure (hPa or inHg)** to track storm fronts.
+4. **Diurnal Solar UV Radiation Trajectory**: Solar insolation bell-curve showing peak UV intensity, sunrise/sunset daylight thresholds, and WHO risk tiers.
+5. **Aerosol Chemistry & AQI Polar Radar**: Radar analysis of $\text{PM}_{2.5}$, $\text{PM}_{10}$, $\text{NO}_2$, $\text{SO}_2$, $\text{O}_3$, and $\text{CO}$.
+6. **Precipitation Probability & Accumulation**: Dual-axis bar and spline combo chart tracking rain probability ($0–100\%$) against expected volume ($\text{mm}$ or $\text{in}$).
+
+#### 📥 Scientific Export & Snapshot Engine:
+- **`📊 Export CSV Data`**: One-click download of clean, structured numerical tabular data for data analysis in Python, R, or Excel.
+- **`📑 Export Raw JSON`**: Raw numerical model package, station metadata, and atmospheric chemistry payloads.
+- **`📷 HD Chart Snapshots`**: Off-screen canvas generator rendering high-resolution PNG charts with dark slate branding, station coordinates, timestamps, and an embedded **`INDICATORS:` visual dataset legend bar** (distinguishing solid ambient vs. dashed feels-like lines).
+
+---
+
+## 🧭 Cross-Suite Synchronization
+
+- **Persistent City State**: Selecting or searching any city on the Dashboard orbits to that location on 3D Earth, and opens that city's graphs on Analytics via `localStorage` and URL parameters (`?city=Tokyo`).
+- **Global Unit Toggle (`°C / °F`)**: Instant switching across temperature, wind velocity ($\text{km/h}$ vs. $\text{mph}$), barometric pressure ($\text{hPa}$ vs. $\text{inHg}$), and visibility ($\text{km}$ vs. $\text{mi}$) without reloading the page.
+- **Aesthetic Instrument Standards**: Vector SVG icon system, **JetBrains Mono** tabular telemetry typography, and live ECMWF NWP stream indicators.
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### 1. Clone & Install
 ```bash
+git clone https://github.com/Mihir-Mendake/STRATOS----Live-Weather-Intelligence.git
+cd STRATOS----Live-Weather-Intelligence
 npm install
 ```
 
-### 2. Start the Server
+### 2. Run the Application
 ```bash
 npm start
 ```
-For auto-reloading during development:
+For live development with auto-reload:
 ```bash
 npm run dev
 ```
 
 ### 3. Open in Browser
-Navigate to **`http://localhost:5000`** in any web browser.
+Visit **`http://localhost:5000`**:
+- [**Dashboard**](http://localhost:5000/index.html): `http://localhost:5000/index.html`
+- [**3D Earth Sphere**](http://localhost:5000/globe.html): `http://localhost:5000/globe.html`
+- [**Climate Analytics**](http://localhost:5000/analytics.html): `http://localhost:5000/analytics.html`
 
 ---
 
-## 🏗️ Project Architecture
+## 📡 REST API Proxy Reference
 
-```
-weather-app/
-├── server/
-│   ├── server.js               # Express application entry point & static file hosting
-│   └── routes/
-│       ├── weather.js          # Weather, geocoding & air quality proxy with in-memory caching
-│       └── favorites.js        # Persistent favorites & search history endpoints
-├── data/
-│   ├── favorites.json          # Stored favorite cities
-│   └── history.json            # Recent searches
-├── index.html                  # Semantic UI structure & glassmorphism layout
-├── style.css                   # Glassmorphism styling, animations, and weather themes
-├── script.js                   # Client controller, API client, canvas particle engine
-├── package.json                # Project dependencies and npm scripts
-├── .env.example                # Environment variable configuration template
-└── README.md                   # Project documentation
-```
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/weather` | `GET` | Aggregated weather forecast payload (`?city=Name` or `?lat=..&lon=..`) |
+| `/api/search` | `GET` | Autocomplete geocoding service (`?q=Query`) |
+| `/api/favorites` | `GET` / `POST` / `DELETE` | Persistent station bookmarks |
+| `/api/history` | `GET` / `POST` | Recent query telemetry history |
+| `/api/health` | `GET` | Server uptime and health verification |
 
 ---
 
-## 📡 Backend API Reference
+## 🛠️ Technology Stack
 
-### 1. Weather Data Endpoint
-`GET /api/weather`
-- **Query Parameters**:
-  - `city` (string, optional) - City name to geocode and fetch (e.g. `?city=Tokyo`)
-  - `lat` (number) & `lon` (number) - Direct coordinates (e.g. `?lat=35.68&lon=139.69`)
-- **Response**: Aggregated weather payload including current conditions, daily 7-day forecast, hourly forecast, and air quality index.
-
-### 2. City Autocomplete Search
-`GET /api/search?q=:query`
-- Returns up to 5 matching global locations with latitude, longitude, and country codes. Cached for fast response times.
-
-### 3. User Favorites
-- `GET /api/favorites` — List all bookmarked cities.
-- `POST /api/favorites` — Save a city (`{ name, country, lat, lon }`).
-- `DELETE /api/favorites/:name` — Remove a city from favorites.
-
-### 4. Search History
-- `GET /api/history` — Get last 10 searched locations.
-- `POST /api/history` — Record a location search.
-
-### 5. Health Check
-`GET /api/health`
-- Server health status and uptime timestamp.
-
----
-
-## 🛠️ Tech Stack & APIs
-
-- **Backend Runtime**: Node.js & Express.js
-- **Weather Provider**: [Open-Meteo API](https://open-meteo.com/) (Forecast & Air Quality)
-- **Geocoding Provider**: Open-Meteo Geocoding API
-- **Typography**: Google Fonts (*Plus Jakarta Sans*)
-- **Rendering**: HTML5 Canvas 2D API for particle simulations
-- **Design System**: Glassmorphism with CSS custom properties
+| Layer | Technologies |
+|---|---|
+| **Frontend Core** | HTML5, CSS3 Glassmorphism, Modern JavaScript (ES6+ Modules) |
+| **3D Sphere & Physics** | [Three.js](https://threejs.org/), [Globe.gl](https://globe.gl/), WebGL 2.0 |
+| **Data Visualization** | [Chart.js 4.4](https://www.chartjs.org/) |
+| **Typography** | [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono), [Plus Jakarta Sans](https://fonts.google.com/specimen/Plus+Jakarta+Sans) |
+| **Backend & Proxy** | Node.js, Express.js, In-Memory Caching Proxy |
+| **Numerical Models** | [Open-Meteo](https://open-meteo.com/) (ECMWF, GFS, DWD ICON, Copernicus) |
 
 ---
 
 ## 📄 License
-MIT License. Free to use and build upon for hackathons, personal, and educational projects.
+MIT License. Built for hackathon innovation, scientific education, and open-source weather intelligence.
